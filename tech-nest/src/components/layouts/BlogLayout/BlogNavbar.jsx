@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { LuSearch } from 'react-icons/lu';
 import { BLOG_NAVBAR_DATA } from '../../../utils/data';
 import Logo from '../../../assets/logo1.svg' // Comment out until file exists
+import SideMenu from './SideMenu';
 
 const BlogNavbar = ({ activeMenu }) => {
   const [openSideMenu, setOpenSideMenu] = useState(false);
@@ -55,9 +56,19 @@ const BlogNavbar = ({ activeMenu }) => {
                 onClick={() => setOpenSearchBar(true)}
             >
                 <LuSearch className='text-[22px]' />
-                Login/SignUp
+                
+            </button>
+            <button
+              className='flex items-center justify-center gap-3 bg-linear-to-r from-blue-700 to-blue-500 md:text-sm font-semibold text-white px-5 md:px-7 py-2 rounded-full hover:bg-black hover:text-white transition-colors cursor-pointer hover:shadow-2xl hover:shadow-blue-200'
+            >
+              Login/SignUp
             </button>
           </div>
+          {openSideMenu && (
+            <div className="fixed top-[61px] -ml-4 bg-white">
+              <SideMenu  activeMenu={activeMenu} isBlogMenu />
+            </div>
+          )}
         </div>
       </div>
     </>
