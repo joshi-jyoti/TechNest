@@ -60,6 +60,7 @@ const BlogNavbar = ({ activeMenu }) => {
             </button>
             <button
               className='flex items-center justify-center gap-3 bg-linear-to-r from-blue-700 to-blue-500 md:text-sm font-semibold text-white px-5 md:px-7 py-2 rounded-full hover:bg-black hover:text-white transition-colors cursor-pointer hover:shadow-2xl hover:shadow-blue-200'
+              onClick={() =>setOpemAuthForm(true)}
             >
               Login/SignUp
             </button>
