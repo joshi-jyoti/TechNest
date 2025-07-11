@@ -6,6 +6,23 @@ const createPost = async (req, res) => {
     try{
         const { title, content, coverImageUrl, tags, isDraft, generatedByAI } = req.body;
 
+        const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        const newPost = new BlogPost({
+            title,
+            slug,
+            content,
+            coverImageUrl,
+            tags,
+            author: req.user._id, // Assuming req.user is populated with the authenticated user's info
+            isDraft,
+            generatedByAI,
+        });
+        await newPost.save();
+        res.status(201).json({
+            message: 'Post created successfully',
+            post: newPost,
+        });
+
     } catch (error) {
         console.error('Error creating post:', error);
         res.status(500).json({ message: 'Server error' });

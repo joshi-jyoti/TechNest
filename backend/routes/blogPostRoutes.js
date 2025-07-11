@@ -8,7 +8,7 @@ const {
     getPostBySlug,
     getPostsByTag,
     searchPosts,
-    incrementViews,
+    incrementView,
     likePost,
     getTopPosts,
 } = require("../controllers/blogPostController");
