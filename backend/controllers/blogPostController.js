@@ -123,9 +123,16 @@ const getAllPosts = async (req, res) => {
 };
 
 // Function to get a blog post by its slug
+// @route GET /api/posts/slug/:slug
 const getPostBySlug = async (req, res) => {
     try{
-
+        const post = await BlogPost.findOne({ slug: req.params.slug })
+            .populate("author", "name profileImageUrl");
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+        // respond with the post data
+        res.json(post);
     } catch (error) {
         console.error('Server Error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -133,16 +140,35 @@ const getPostBySlug = async (req, res) => {
 };
 
 // Function to get blog posts by tag
+// @route GET /api/posts/tag/:tag
 const getPostsByTag = async (req, res) => {
     try{
-
+        const posts = await BlogPost.find({ tags: req.params.tag, isDraft: false })
+            .populate("author", "name profileImageUrl")
+            .sort({ createdAt: -1 });
+        
+        res.json(posts); // Fixed: moved this line outside the query chain
+        
     } catch (error) {
         console.error('Server Error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 // Function to search blog posts
+// @route GET /api/posts/search?q=searchTerm
 const searchPosts = async (req, res) => {
+    const q= req.query.q || '';
+    const posts = await BlogPost.find({
+        isDraft: false,
+        $or: [
+            { title: { $regex: q, $options: 'i' } },
+            { content: { $regex: q, $options: 'i' } },
+            { tags: { $regex: q, $options: 'i' } }
+        ],
+    })
+    .populate("author", "name profileImageUrl");
+    res.json(posts);
     try{
 
     } catch (error) {
@@ -151,27 +177,40 @@ const searchPosts = async (req, res) => {
     }
 };
 // Function to increment views of a blog post
+// @route POST /api/posts/:id/view
 const incrementView = async (req, res) => {
     try{
-
+        await BlogPost.findByIdAndUpdate(req.params.id, 
+            { $inc: { views: 1 } });
+        res.json({ message: 'View incremented successfully' });
     } catch (error) {
         console.error('Server Error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 // Function to like a blog post 
+// @route POST /api/posts/:id/like
 const likePost = async (req, res) => {
     try{
-
+        await BlogPost.findByIdAndUpdate(req.params.id, {$inc: { likes: 1 } });
+        res.json({ message: 'Post liked successfully' });
+           
     } catch (error) {
         console.error('Server Error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 // Function to get top trending blog posts
+// @route GET /api/posts/trending
+//@access private
 const getTopPosts = async (req, res) => { 
     try{
-
+        const posts = await BlogPost.find({ isDraft: false })
+            .sort({ views: -1, likes: -1 }) // Sort by views and likes
+            .limit(10) // Limit to top 10 posts
+            .populate("author", "name profileImageUrl");
+        
+        res.json(posts);
     } catch (error) {
         console.error('Server Error:', error);
         res.status(500).json({ message: 'Server error' });
