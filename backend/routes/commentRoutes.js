@@ -19,6 +19,6 @@ router.get("/:postId", getCommentsByPost);
 router.get("/", protect, getAllComments);
 // Route to delete a comment
 // @route DELETE /api/comments/:id
-router.delete("/:commentid", protect, deleteComment);
+router.delete("/:commentId", protect, deleteComment);
 
 module.exports = router;

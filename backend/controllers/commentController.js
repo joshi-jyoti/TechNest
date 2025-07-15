@@ -39,63 +39,116 @@ const addComment = async (req, res) => {
 // @route GET /api/comments
 // access public
 const getAllComments = async (req, res) => {
-    
     try{
         const comments = await Comment.find()
-        .populate("author", "name profileImageUrl")
-        .populate("post", "title coverImageUrl")
-        .sort({ createdAt: 1 })
+            .populate("author", "name profileImageUrl")
+            .populate("post", "title coverImageUrl")
+            .sort({ createdAt: 1 });
 
         //create a map for commentId -> comment object
         const commentMap = {};
         comments.forEach(comment => {
-            comment = comment.toObject(); // Convert Mongoose document to plain object
-            comment.replies = []; // Initialize replies array
-            commentMap[comment._id] = comment; // Map comment by ID
+            const commentObj = comment.toObject(); // Fixed: use a new variable
+            commentObj.replies = []; // Initialize replies array
+            commentMap[commentObj._id] = commentObj; // Map comment by ID
         });
 
         // nest replies under their parent comments
-        // GET api/comments
         const nestedComments = [];
         comments.forEach(comment => {
-            if (comment.parentComment){
-                const parent = commentMap[comment.parentComment];
+            const commentObj = comment.toObject(); // Fixed: convert to object again
+            if (commentObj.parentComment){
+                const parent = commentMap[commentObj.parentComment];
                 if (parent) {
-                    parent.replies.push(commentMap[comment._id]); // Add comment to parent's replies
+                    parent.replies.push(commentMap[commentObj._id]); // Add comment to parent's replies
                 }
             } else{
-                nestedComments.push(commentMap[comment._id]); // Top-level comment
+                nestedComments.push(commentMap[commentObj._id]); // Top-level comment
             }
         });
-            res.json(nestedComments);
+        
+        res.json(nestedComments);
         
     } catch (error) {
-        res
-            .status(500)
-            .json({ message: "Failed to fetch all comments", error: error.message });
+        console.error('Error fetching all comments:', error);
+        res.status(500).json({ message: "Failed to fetch all comments", error: error.message });
     }
 };
 // Function to get comments by post ID
 // @route GET /api/comments/:postId 
 const getCommentsByPost = async (req, res) => {
     try{
-
+        const { postId } = req.params;
+        
+        // Verify post exists
+        const post = await BlogPost.findById(postId);
+        if (!post) {
+            return res.status(404).json({ message: "Blog post not found" });
+        }
+        
+        const comments = await Comment.find({ post: postId })
+            .populate("author", "name profileImageUrl")
+            .populate("post", "title coverImageUrl")
+            .sort({ createdAt: 1 });
+            
+        //create a map for commentId -> comment object
+        const commentMap = {};
+        comments.forEach(comment => {
+            const commentObj = comment.toObject(); // Convert Mongoose document to plain object
+            commentObj.replies = []; // Initialize replies array
+            commentMap[commentObj._id] = commentObj; // Map comment by ID
+        });
+        
+        // nest replies under their parent comments
+        const nestedComments = [];
+        comments.forEach(comment => {
+            const commentObj = comment.toObject();
+            if (commentObj.parentComment) {
+                const parent = commentMap[commentObj.parentComment];
+                if (parent) {
+                    parent.replies.push(commentMap[commentObj._id]); // Add comment to parent's replies
+                }
+            } else {
+                nestedComments.push(commentMap[commentObj._id]); // Top-level comment
+            }
+        });
+        
+        res.json(nestedComments); // Fixed: Added missing response
+        
     } catch (error) {
-        res
-            .status(500)
-            .json({ message: "Failed to fetch all comments", error: error.message });
+        console.error('Error fetching comments by post:', error);
+        res.status(500).json({ message: "Failed to fetch comments", error: error.message });
     }
 };
 
 // Function to delete a comment
-// @route DELETE /api/comments/:commentid
+// @route DELETE /api/comments/:commentId  // Fixed: changed to commentId
 const deleteComment = async (req, res) => {
     try{
-
+        const { commentId } = req.params; // This should match the route parameter
+        
+        console.log('Comment ID to delete:', commentId); // Debug log
+        
+        // Verify comment exists
+        const comment = await Comment.findById(commentId);
+        if (!comment) {
+            return res.status(404).json({ message: "Comment not found" });
+        }
+        
+        // Check if user is authorized to delete this comment
+        if (comment.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: "Not authorized to delete this comment" });
+        }
+        
+        //delete comment
+        await Comment.deleteOne({ _id: commentId });
+        //delete all replies to this comment
+        await Comment.deleteMany({ parentComment: commentId });
+        res.status(200).json({ message: "Comment deleted successfully" });
+        
     } catch (error) {
-        res
-            .status(500)
-            .json({ message: "Failed to delete all comment", error: error.message });
+        console.error('Error deleting comment:', error);
+        res.status(500).json({ message: "Failed to delete comment", error: error.message });
     }
 };
 
