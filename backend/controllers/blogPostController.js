@@ -79,7 +79,7 @@ const getAllPosts = async (req, res) => {
     try{
         const status = req.query.status || 'published';
         const page = parseInt(req.query.page) || 1;
-        const limit = 10; // Number of posts per page
+        const limit = 5; // Number of posts per page
         const skip = (page - 1) * limit;
 
         //determine the filter for main posts responsee
@@ -207,7 +207,7 @@ const getTopPosts = async (req, res) => {
     try{
         const posts = await BlogPost.find({ isDraft: false })
             .sort({ views: -1, likes: -1 }) // Sort by views and likes
-            .limit(10) // Limit to top 10 posts
+            .limit(5) // Limit to top 10 posts
             .populate("author", "name profileImageUrl");
         
         res.json(posts);
