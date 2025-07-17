@@ -1,4 +1,4 @@
-const blogPost = require('../models/BlogPost');
+const BlogPost = require('../models/BlogPost');
 const Comment  = require('../models/Comment');
 
 // Function to get dashboard summary
@@ -12,20 +12,20 @@ const getDashboardSummary = async (req, res) => {
             BlogPost.countDocuments({isDraft : true}),
             BlogPost.countDocuments({isDraft : false}),
             Comment.countDocuments(),
-            blogPost.countDocuments({generatedByAI: true}),
+            BlogPost.countDocuments({generatedByAI: true}),
         ]);
-        const totalViewsAgg = await blogPost.aggregate([
+        const totalViewsAgg = await BlogPost.aggregate([
             { $group: {
                 _id: null, total: { $sum: "$views" }
             }}
         ]);
-        const totalLikesAgg = await blogPost.aggregate([
+        const totalLikesAgg = await BlogPost.aggregate([
             { $group: { _id: null, total: { $sum: "$likes" } }}
         ]);
         const totalViews = totalViewsAgg[0]?.total || 0;
         const totalLikes = totalLikesAgg[0]?.total || 0;
         // Top performing posts
-        const topPosts = await blogPost.find({ isDraft: false })
+        const topPosts = await BlogPost.find({ isDraft: false })
         .select("title coverImageUrl views likes")
         .sort({ views: -1, likes: -1 })
         .limit(5);
@@ -36,7 +36,7 @@ const getDashboardSummary = async (req, res) => {
             .populate("author", "name profileImageUrl")
             .populate("post", "title coverImageUrl");
         //Tag usage aggregation
-        const tagUsage = await blogPost.aggregate([
+        const tagUsage = await BlogPost.aggregate([
             { $unwind: "$tags"},
             { $group: {_id: "$tags", count: { $sum: 1 }}},
             { $project: {tag: "$_id", count: 1, _id: 0}},
