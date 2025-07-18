@@ -11,6 +11,7 @@ const ai = new GoogleGenAI({
 });
 
 // Function to generate a blog post using AI
+
 // @route POST /api/ai/generate
 // @access Private
 const generateBlogPost = async (req, res) => {
