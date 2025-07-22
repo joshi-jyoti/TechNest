@@ -29,6 +29,25 @@ function generateReplyPrompt(comment) {
     Write a thoughtful, concise reply to this comment.`;
 }
 
-const blogSummaryPrompt = (blogPost) => (`
-    
-    `)
+const blogSummaryPrompt = (blogContent) => (`
+    You are an AI assistant that summarizes blog posts.
+
+    Instructions:
+     - Read the blog post content below.
+     - Generate a short , catchy ,SEO-friendly title (max 15 words).
+     - Write a clear engaging summary  of about 300 words.
+     - At the end of the summary, add a markdown section titled **## What You'll Learn**.
+     - Under that heading, list 3-5 keys takeaways or skills that reader will learn in **bullet points** using markdown (\`-\`).
+
+     Return the result in **valid JSON format** with the following structure:
+     {
+        "title": "Short SEO-friendly title",
+        "summary": "300-word summary with a markdown section for what You'll Learn"
+     }
+        Blog Post Content: ${blogContent}
+`);
+module.exports = {
+    blogPostIdeasPrompt,
+    generateReplyPrompt,
+    blogSummaryPrompt
+};

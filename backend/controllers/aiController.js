@@ -1,103 +1,42 @@
-// const { GoogleGenAI } = require("@google/genai");
-// const {
-//     blogPostIdeasPrompt,
-//     generateReplyPrompt,
-//     blogSummaryPrompt,
-// } = require("../utils/prompts");
-
-// // Initialize Google GenAI client
-// const ai = new GoogleGenAI({
-//     apiKey: process.env.GEMINI_API_KEY
-// });
-
-// // Function to generate a blog post using AI
-
-// // @route POST /api/ai/generate
-// // @access Private
-// const generateBlogPost = async (req, res) => {
-//     try{
-
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server error', error: error.message });
-//     }
-// };
-
-// // Function to generate blog post ideas
-// // @route POST /api/ai/generate-ideas
-// // @access Private
-// const generatBlogPostIdeas = async (req, res) => {
-//     try{
-
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server error', error: error.message });
-//     }
-// };
-// // Function to generate a comment reply using AI
-// // @route POST /api/ai/generate-reply
-// // @access Private
-// const generateCommentReply = async (req, res) => {
-//     try{
-
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server error', error: error.message });
-//     }
-// };
-// // Function to generate a blog post summary using AI
-// // @route POST /api/ai/generate-summary
-// // @access Private
-// const generateBlogPostSummary = async (req, res) => {
-//     try{
-
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server error', error: error.message });
-//     }
-// };
-
-// module.exports = {
-//     generateBlogPost,
-//     generatBlogPostIdeas,
-//     generateCommentReply,
-//     generateBlogPostSummary
-// };
-
-
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // Fixed: correct package
-
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const {
+    blogPostIdeasPrompt,
+    generateReplyPrompt,
+    blogSummaryPrompt,
+} = require("../utils/prompts");
 // Initialize Google Generative AI client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY); // Fixed: correct initialization
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Function to generate a blog post using AI
 // @route POST /api/ai/generate
 // @access Private
 const generateBlogPost = async (req, res) => {
     try{
-        const { topic, keywords, tone = 'professional' } = req.body;
-
-        if (!topic) {
-            return res.status(400).json({ message: 'Topic is required' });
+        const { title, tone } = req.body;
+        
+        if (!title || !tone) {
+            return res.status(400).json({ message: "Missing required fields" });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        const prompt = `Write a comprehensive blog post about "${topic}". 
-        ${keywords ? `Include these keywords: ${keywords.join(', ')}` : ''}
-        Tone: ${tone}
+        const prompt = `Write a comprehensive markdown-formatted blog post titled "${title}" with a ${tone} tone. 
         
-        Structure the post with:
-        1. Engaging title
-        2. Introduction
-        3. Main content with subheadings
-        4. Conclusion
-        5. Suggested tags`;
+        Structure:
+        - Introduction
+        - Main content with subheadings
+        - Code examples if relevant
+        - Conclusion
+        - Make it engaging and informative`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 
-        res.json({
+        res.status(200).json({
             success: true,
+            title,
             content: text,
-            topic,
             tone
         });
 
@@ -110,7 +49,7 @@ const generateBlogPost = async (req, res) => {
 // Function to generate blog post ideas
 // @route POST /api/ai/generate-ideas
 // @access Private
-const generateBlogPostIdeas = async (req, res) => { // Fixed: corrected function name
+const generateBlogPostIdeas = async (req, res) => {
     try{
         const { niche, count = 5 } = req.body;
 
@@ -120,21 +59,24 @@ const generateBlogPostIdeas = async (req, res) => { // Fixed: corrected function
 
         const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        const prompt = `Generate ${count} creative blog post ideas for the "${niche}" niche. 
+        const prompt = `Generate ${count} creative and engaging blog post ideas for the "${niche}" niche.
+        
         For each idea, provide:
         - Catchy title
         - Brief description (2-3 sentences)
         - Target audience
-        - Suggested keywords`;
+        - Suggested keywords
+        
+        Make them unique and valuable for readers.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const text = response.text();
+        const ideas = response.text();
 
-        res.json({
+        res.status(200).json({
             success: true,
             niche,
-            ideas: text,
+            ideas,
             count
         });
 
@@ -157,12 +99,12 @@ const generateCommentReply = async (req, res) => {
 
         const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        const prompt = `Generate a ${tone} reply to this comment: "${comment}"
+        const prompt = `Generate a ${tone} and helpful reply to this comment: "${comment}"
         ${context ? `Context: ${context}` : ''}
         
         Make the reply:
-        - Helpful and engaging
         - Professional but ${tone}
+        - Helpful and engaging
         - 1-2 sentences long
         - Encouraging further discussion`;
 
@@ -170,7 +112,7 @@ const generateCommentReply = async (req, res) => {
         const response = await result.response;
         const reply = response.text();
 
-        res.json({
+        res.status(200).json({
             success: true,
             reply: reply.trim(),
             originalComment: comment,
@@ -178,7 +120,7 @@ const generateCommentReply = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error generating reply:', error);
+        console.error('Error generating comment reply:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -200,9 +142,9 @@ const generateBlogPostSummary = async (req, res) => {
 
         "${content}"
 
-        Make the summary:
+        Create a summary that is:
         - Concise and informative
-        - Capturing key points
+        - Captures the main points
         - SEO-friendly
         - Engaging for readers`;
 
@@ -210,7 +152,7 @@ const generateBlogPostSummary = async (req, res) => {
         const response = await result.response;
         const summary = response.text();
 
-        res.json({
+        res.status(200).json({
             success: true,
             summary: summary.trim(),
             originalLength: content.length,
@@ -225,7 +167,7 @@ const generateBlogPostSummary = async (req, res) => {
 
 module.exports = {
     generateBlogPost,
-    generateBlogPostIdeas, // Fixed: corrected export name
+    generateBlogPostIdeas,
     generateCommentReply,
     generateBlogPostSummary
 };
