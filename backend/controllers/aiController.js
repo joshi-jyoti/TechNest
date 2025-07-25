@@ -1,9 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const {
-    blogPostIdeasPrompt,
-    generateReplyPrompt,
-    blogSummaryPrompt,
-} = require("../utils/prompts");
+
 // Initialize Google Generative AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -15,12 +11,12 @@ const generateBlogPost = async (req, res) => {
         const { title, tone } = req.body;
         
         if (!title || !tone) {
-            return res.status(400).json({ message: "Missing required fields" });
+            return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
 
-        const prompt = `Write a comprehensive markdown-formatted blog post titled "${title}" with a ${tone} tone. 
+        const prompt = `Write a comprehensive markdown-formatted blog post titled "${title}" with a ${tone} tone.Include an introduction, main content with subheadings, and a conclusion. 
         
         Structure:
         - Introduction
@@ -33,12 +29,13 @@ const generateBlogPost = async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        res.status(200).json({
-            success: true,
-            title,
-            content: text,
-            tone
-        });
+        // res.status(200).json({
+        //     success: true,
+        //     title,
+        //     content: text,
+        //     tone
+        // });
+        res.status(200).json(text);
 
     } catch (error) {
         console.error('Error generating blog post:', error);
@@ -57,7 +54,7 @@ const generateBlogPostIdeas = async (req, res) => {
             return res.status(400).json({ message: 'Niche is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
 
         const prompt = `Generate ${count} creative and engaging blog post ideas for the "${niche}" niche.
         
@@ -65,9 +62,7 @@ const generateBlogPostIdeas = async (req, res) => {
         - Catchy title
         - Brief description (2-3 sentences)
         - Target audience
-        - Suggested keywords
-        
-        Make them unique and valuable for readers.`;
+        - Suggested keywords`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -97,7 +92,7 @@ const generateCommentReply = async (req, res) => {
             return res.status(400).json({ message: 'Comment is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
 
         const prompt = `Generate a ${tone} and helpful reply to this comment: "${comment}"
         ${context ? `Context: ${context}` : ''}
@@ -105,8 +100,7 @@ const generateCommentReply = async (req, res) => {
         Make the reply:
         - Professional but ${tone}
         - Helpful and engaging
-        - 1-2 sentences long
-        - Encouraging further discussion`;
+        - 1-2 sentences long`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -136,17 +130,16 @@ const generateBlogPostSummary = async (req, res) => {
             return res.status(400).json({ message: 'Content is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
 
         const prompt = `Summarize this blog post content in ${maxLength} characters or less:
 
         "${content}"
 
-        Create a summary that is:
+        Make the summary:
         - Concise and informative
         - Captures the main points
-        - SEO-friendly
-        - Engaging for readers`;
+        - SEO-friendly`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
