@@ -1,4 +1,9 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const {
+    blogPostIdeasPrompt,
+    generateReplyPrompt,
+    blogSummaryPrompt,
+} = require("../utils/prompts"); // Fixed: Added missing import
 
 // Initialize Google Generative AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -8,15 +13,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // @access Private
 const generateBlogPost = async (req, res) => {
     try{
-        const { title, tone } = req.body;
+        const { title, tone = 'professional' } = req.body;
         
-        if (!title || !tone) {
-            return res.status(400).json({ message: 'Missing required fields' });
+        if (!title) {
+            return res.status(400).json({ message: 'Title is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: consistent model
 
-        const prompt = `Write a comprehensive markdown-formatted blog post titled "${title}" with a ${tone} tone.Include an introduction, main content with subheadings, and a conclusion. 
+        const prompt = `Write a comprehensive markdown-formatted blog post titled "${title}" with a ${tone} tone. 
         
         Structure:
         - Introduction
@@ -29,13 +34,12 @@ const generateBlogPost = async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        // res.status(200).json({
-        //     success: true,
-        //     title,
-        //     content: text,
-        //     tone
-        // });
-        res.status(200).json(text);
+        res.status(200).json({
+            success: true,
+            title,
+            content: text,
+            tone
+        });
 
     } catch (error) {
         console.error('Error generating blog post:', error);
@@ -48,32 +52,45 @@ const generateBlogPost = async (req, res) => {
 // @access Private
 const generateBlogPostIdeas = async (req, res) => {
     try{
-        const { niche, count = 5 } = req.body;
+        const { topics } = req.body; // Changed to match your frontend
 
-        if (!niche) {
-            return res.status(400).json({ message: 'Niche is required' });
+        if (!topics) {
+            return res.status(400).json({ message: 'Topics is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Fixed: consistent API usage
 
-        const prompt = `Generate ${count} creative and engaging blog post ideas for the "${niche}" niche.
-        
-        For each idea, provide:
-        - Catchy title
-        - Brief description (2-3 sentences)
-        - Target audience
-        - Suggested keywords`;
+        const prompt = blogPostIdeasPrompt(topics); // Now this function is imported
 
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(prompt); // Fixed: proper API usage
         const response = await result.response;
-        const ideas = response.text();
+        const rawText = response.text();
 
-        res.status(200).json({
-            success: true,
-            niche,
-            ideas,
-            count
-        });
+        try {
+            const cleanedText = rawText
+                .replace(/^```json\s*/, "") // remove starting ```json
+                .replace(/```$/, "") // remove ending ```
+                .trim(); // remove any leading/trailing whitespace
+
+            // Parse as JSON
+            const data = JSON.parse(cleanedText);
+            res.status(200).json(data);
+            // res.status(200).json({
+            //     success: true,
+            //     topics,
+            //     ideas: Array.isArray(data) ? data : [data]
+            // });
+
+        } catch (parseError) {
+            console.error('JSON parsing error:', parseError);
+            // Fallback response
+            res.status(200).json({
+                success: true,
+                topics,
+                ideas: rawText,
+                note: "Response was not in JSON format"
+            });
+        }
 
     } catch (error) {
         console.error('Error generating blog ideas:', error);
@@ -92,7 +109,7 @@ const generateCommentReply = async (req, res) => {
             return res.status(400).json({ message: 'Comment is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: consistent model
 
         const prompt = `Generate a ${tone} and helpful reply to this comment: "${comment}"
         ${context ? `Context: ${context}` : ''}
@@ -130,27 +147,39 @@ const generateBlogPostSummary = async (req, res) => {
             return res.status(400).json({ message: 'Content is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: updated model name
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: consistent model
 
-        const prompt = `Summarize this blog post content in ${maxLength} characters or less:
-
-        "${content}"
-
-        Make the summary:
-        - Concise and informative
-        - Captures the main points
-        - SEO-friendly`;
+        const prompt = blogSummaryPrompt(content); // Using the imported prompt function
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const summary = response.text();
+        const rawText = response.text();
 
-        res.status(200).json({
-            success: true,
-            summary: summary.trim(),
-            originalLength: content.length,
-            summaryLength: summary.trim().length
-        });
+        try {
+            const cleanedText = rawText
+                .replace(/^```json\s*/, "")
+                .replace(/```$/, "")
+                .trim();
+
+            const summaryData = JSON.parse(cleanedText);
+
+            res.status(200).json({
+                success: true,
+                title: summaryData.title,
+                summary: summaryData.summary,
+                originalLength: content.length,
+                summaryLength: summaryData.summary.length
+            });
+
+        } catch (parseError) {
+            // Fallback if JSON parsing fails
+            res.status(200).json({
+                success: true,
+                summary: rawText.trim(),
+                originalLength: content.length,
+                summaryLength: rawText.trim().length
+            });
+        }
 
     } catch (error) {
         console.error('Error generating summary:', error);
