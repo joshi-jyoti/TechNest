@@ -52,38 +52,31 @@ const generateBlogPost = async (req, res) => {
 // @access Private
 const generateBlogPostIdeas = async (req, res) => {
     try{
-        const { topics } = req.body; // Changed to match your frontend
+        const { topics } = req.body;
 
         if (!topics) {
             return res.status(400).json({ message: 'Topics is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Fixed: consistent API usage
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: consistent model
 
-        const prompt = blogPostIdeasPrompt(topics); // Now this function is imported
+        const prompt = blogPostIdeasPrompt(topics);
 
-        const result = await model.generateContent(prompt); // Fixed: proper API usage
+        const result = await model.generateContent(prompt);
         const response = await result.response;
         const rawText = response.text();
 
         try {
             const cleanedText = rawText
-                .replace(/^```json\s*/, "") // remove starting ```json
-                .replace(/```$/, "") // remove ending ```
-                .trim(); // remove any leading/trailing whitespace
+                .replace(/^```json\s*/, "")
+                .replace(/```$/, "")
+                .trim();
 
-            // Parse as JSON
             const data = JSON.parse(cleanedText);
             res.status(200).json(data);
-            // res.status(200).json({
-            //     success: true,
-            //     topics,
-            //     ideas: Array.isArray(data) ? data : [data]
-            // });
 
         } catch (parseError) {
             console.error('JSON parsing error:', parseError);
-            // Fallback response
             res.status(200).json({
                 success: true,
                 topics,
@@ -103,32 +96,37 @@ const generateBlogPostIdeas = async (req, res) => {
 // @access Private
 const generateCommentReply = async (req, res) => {
     try{
-        const { comment, tone = 'friendly', context } = req.body;
-
-        if (!comment) {
-            return res.status(400).json({ message: 'Comment is required' });
+        const { author, content } = req.body;
+        if(!content) {
+            return res.status(400).json({ message: 'Content is required' });
         }
-
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: consistent model
-
-        const prompt = `Generate a ${tone} and helpful reply to this comment: "${comment}"
-        ${context ? `Context: ${context}` : ''}
         
-        Make the reply:
-        - Professional but ${tone}
-        - Helpful and engaging
-        - 1-2 sentences long`;
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        
+        // Extract the author name properly
+        let authorName;
+        if (typeof author === 'string') {
+            authorName = author;
+        } else if (author && author.name) {
+            authorName = author.name;
+        } else {
+            authorName = "Reader";
+        }
+        
+        // Create comment object with extracted name
+        const comment = {
+            author: { name: authorName },
+            content: content
+        };
+        
+        const prompt = generateReplyPrompt(comment);
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const reply = response.text();
-
-        res.status(200).json({
-            success: true,
-            reply: reply.trim(),
-            originalComment: comment,
-            tone
-        });
+        const rawText = response.text();
+        
+        // Return plain text without JSON wrapping
+        res.status(200).send(rawText.trim());
 
     } catch (error) {
         console.error('Error generating comment reply:', error);
@@ -141,46 +139,25 @@ const generateCommentReply = async (req, res) => {
 // @access Private
 const generateBlogPostSummary = async (req, res) => {
     try{
-        const { content, maxLength = 200 } = req.body;
-
+        const { content } = req.body;
+        
         if (!content) {
             return res.status(400).json({ message: 'Content is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fixed: consistent model
-
-        const prompt = blogSummaryPrompt(content); // Using the imported prompt function
-
-        const result = await model.generateContent(prompt);
+        const prompt = blogSummaryPrompt(content);
+        const result = await genAI.getGenerativeModel({ model: "gemini-2.5-flash" }).generateContent(prompt);
         const response = await result.response;
         const rawText = response.text();
-
-        try {
-            const cleanedText = rawText
-                .replace(/^```json\s*/, "")
-                .replace(/```$/, "")
-                .trim();
-
-            const summaryData = JSON.parse(cleanedText);
-
-            res.status(200).json({
-                success: true,
-                title: summaryData.title,
-                summary: summaryData.summary,
-                originalLength: content.length,
-                summaryLength: summaryData.summary.length
-            });
-
-        } catch (parseError) {
-            // Fallback if JSON parsing fails
-            res.status(200).json({
-                success: true,
-                summary: rawText.trim(),
-                originalLength: content.length,
-                summaryLength: rawText.trim().length
-            });
-        }
-
+        
+        const cleanedText = rawText
+            .replace(/^```json\s*/, "")
+            .replace(/```$/, "")
+            .trim();
+            
+        // Attempt to parse the cleaned text as JSON
+        const data = JSON.parse(cleanedText);
+        res.status(200).json(data);
     } catch (error) {
         console.error('Error generating summary:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
