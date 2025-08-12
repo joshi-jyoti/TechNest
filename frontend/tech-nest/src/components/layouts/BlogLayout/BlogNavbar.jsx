@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import { LuSearch } from 'react-icons/lu';
 import { BLOG_NAVBAR_DATA } from '../../../utils/data';
-import Logo from '../../../assets/logo1.svg' // Comment out until file exists
-import SideMenu from './SideMenu';
+import Logo from '../../../assets/logo1.svg'
+import SideMenu from '../SideMenu'; // Fixed: changed from './SideMenu' to '../SideMenu'
+import { UserContext } from '../../../context/userContext';
 
 const BlogNavbar = ({ activeMenu }) => {
   const [openSideMenu, setOpenSideMenu] = useState(false);
   const [openSearchBar, setOpenSearchBar] = useState(false);
+  const { setOpenAuthForm } = useContext(UserContext);
+  
   return (
     <>
       <div className="bg-white border-b border-gray-200/50 backdrop-blur-[2px] py-4 px-7 sticky top-0 z-30">
@@ -29,12 +32,11 @@ const BlogNavbar = ({ activeMenu }) => {
             <Link to="/">
                 <img src={Logo} alt="Logo" className="h-[24px] md:h-[26px]" />
             </Link>
-            {/* <div className="text-xl font-bold">TechNest</div> */}
           </div>
 
           <nav className="hidden md:flex items-center gap-10">
             {BLOG_NAVBAR_DATA.map((item, index) => {
-                if (item?.onlySideMenu) return;
+                if (item?.onlySideMenu) return null;
 
                 return (
                     <Link key={item.id} to={item.path}>
@@ -42,7 +44,7 @@ const BlogNavbar = ({ activeMenu }) => {
                             {item.label}
                             <span
                                 className={`absolute inset-x-0 bottom-0 h-[2px] bg-sky-500 transition-all duration-300 origin-left ${
-                                   index == 0? "scale-x-100" : "scale-x-0" 
+                                   index === 0 ? "scale-x-100" : "scale-x-0" 
                                 } group-hover:scale-x-100`}
                             ></span>
                         </li>
@@ -56,11 +58,10 @@ const BlogNavbar = ({ activeMenu }) => {
                 onClick={() => setOpenSearchBar(true)}
             >
                 <LuSearch className='text-[22px]' />
-                
             </button>
             <button
-              className='flex items-center justify-center gap-3 bg-linear-to-r from-blue-700 to-blue-500 md:text-sm font-semibold text-white px-5 md:px-7 py-2 rounded-full hover:bg-black hover:text-white transition-colors cursor-pointer hover:shadow-2xl hover:shadow-blue-200'
-              onClick={() =>setOpemAuthForm(true)}
+              className='flex items-center justify-center gap-3 bg-gradient-to-r from-blue-700 to-blue-500 md:text-sm font-semibold text-white px-5 md:px-7 py-2 rounded-full hover:bg-black hover:text-white transition-colors cursor-pointer hover:shadow-2xl hover:shadow-blue-200'
+              onClick={() => setOpenAuthForm(true)}
             >
               Login/SignUp
             </button>

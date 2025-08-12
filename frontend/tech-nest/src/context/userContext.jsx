@@ -1,9 +1,10 @@
-import React, { createContext, useState, useEffect, Children } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import axiosInstance from '../utils/axiosInstance';
 import { API_PATHS } from '../utils/apiPaths';
 
-export  const UserContext = createContext();
-const UserProvider = ({ Children }) => {
+export const UserContext = createContext();
+
+const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openAuthForm, setOpenAuthForm] = useState(false);
@@ -36,19 +37,21 @@ const updateUser = (userData) => {
 
   const clearUser = () => {
     setUser(null);
-    setSearchResults([])
     localStorage.removeItem("token");
   };
     
-  return <UserContext.Provider value={{
-    user,
-     loading,
-     updateUser,
-     clearUser,
+  return (
+    <UserContext.Provider value={{
+      user,
+      loading,
+      updateUser,
+      clearUser,
       openAuthForm,
       setOpenAuthForm,
-  }}>{Children}</UserContext.Provider>
-
+    }}>
+      {children}
+    </UserContext.Provider>
+  );
 };
 
 export default UserProvider;

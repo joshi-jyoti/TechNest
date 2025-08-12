@@ -29,7 +29,8 @@ const App = () => {
           <Route path="/admin/posts" element={<BlogPosts />} />
           <Route path="/admin/create" element={<BlogPostEditor />} />
           <Route
-           path="/admin/edit/:postSlug" element={<BlogPostEditor isEdit={true} />} /> 
+           path="/admin/edit/:postSlug" 
+           element={<BlogPostEditor isEdit={true} />} /> 
            <Route path="/admin/comments" element={<Comments />} />         
           </Route>
           <Route path="/admin-login" element={<AdminLogin />} />

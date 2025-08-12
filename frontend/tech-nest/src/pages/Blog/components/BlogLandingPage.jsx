@@ -10,3 +10,4 @@ const BlogLandingPage = () => {
 }
 
 export default BlogLandingPage
+ 

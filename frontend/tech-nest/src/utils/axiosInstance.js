@@ -2,7 +2,7 @@ import axios from "axios";
 import { BASE_URL } from "./apiPaths";
 
 const axiosInstance = axios.create({
-    baaseURL: BASE_URL,
+    baseURL: BASE_URL, // Fixed typo: was "baaseURL"
     timeout: 80000,
     headers: {
         "Content-Type": "application/json",
